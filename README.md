@@ -14,34 +14,23 @@ React admin UI for the Google Sheets based workflow.
 
 ## Current data mode
 
-The app currently uses a browser `localStorage` mock store so the UI can be reviewed before the Google Apps Script admin API is finished.
+The app is designed to work against Google Apps Script.
+
+Set these env vars:
+
+- `VITE_ADMISSIONS_ENDPOINT=https://your-website-domain/api/register`
+- `VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/your-apps-script-deployment-id/exec`
 
 ## Run
 
 1. `npm install`
 2. `npm run dev`
 
-Default local password:
-
-- `admin123`
-
-Change later with:
-
-- `VITE_ADMIN_PASSWORD=your-password`
-
-To use the same live admission save flow as the website:
-
-- `VITE_ADMISSIONS_ENDPOINT=https://your-website-domain/api/register`
-
-Example:
-
-- `VITE_ADMISSIONS_ENDPOINT=https://excelkidshub.in/api/register`
-
-When this is set, the `Students` form in the admin UI will submit new admissions through the same Vercel API proxy already used by the website form.
+The admin login now uses the Apps Script `adminLogin` action, so use the same `ADMIN_PASSWORD` that you configured in Apps Script Script Properties.
 
 ## Next backend work
 
-Recommended Apps Script admin actions:
+Required Apps Script admin actions:
 
 - `login`
 - `getDashboard`
@@ -54,6 +43,8 @@ Recommended Apps Script admin actions:
 - `assignStudentToBatch`
 - `savePayment`
 - `saveExpense`
+- `getPayments`
+- `getExpenses`
 
 ## Current live connection path
 
@@ -67,12 +58,13 @@ Current config locations:
 
 - Website Vercel proxy: [register.js](/c:/application/docg/excelkidshub-workspace/excelkidshub.github.io/api/register.js)
 - Website form submit JS: [admissions.js](/c:/application/docg/excelkidshub-workspace/excelkidshub.github.io/js/admissions.js)
-- Admin UI live admission endpoint config: [api.ts](/c:/application/docg/excelkidshub-workspace/admin-ui-google/src/lib/api.ts)
+- Admin UI live Apps Script API config: [api.live.ts](/c:/application/docg/excelkidshub-workspace/admin-ui-google/src/lib/api.live.ts)
 - Admin UI env example: [.env.example](/c:/application/docg/excelkidshub-workspace/admin-ui-google/.env.example)
 
-If the admin UI is moved to a separate repo and deployed separately on Vercel, set:
+For the admin Vercel project, set:
 
 - `VITE_ADMISSIONS_ENDPOINT` in the admin project
+- `VITE_GOOGLE_SCRIPT_URL` in the admin project
 
 If the website Vercel project should use an env var instead of hardcoded Apps Script URL, set:
 
@@ -82,11 +74,4 @@ in the website Vercel project settings.
 
 ## Current limitation
 
-Right now only new admission creation can use the live Google Sheet flow through `/api/register`.
-
-These admin modules are still local/mock until dedicated read/update APIs are added:
-
-- dashboard reads
-- batch reads/writes
-- payment reads/writes
-- expense reads/writes
+Student edit is not yet wired back to Google Sheet update logic. New admission creation, dashboard reads, admissions reads, batches, payments, and expenses are intended to use Apps Script.

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { adminApi, adminSession } from "./lib/api";
+import { adminApi, adminSession } from "./lib/api.live";
 import type { AdminData, BatchForm, ExpenseForm, LearningMode, PaymentForm, PaymentMode, StudentForm, ViewKey } from "./types";
 
 const views: { key: ViewKey; label: string }[] = [
@@ -234,13 +234,13 @@ export default function App() {
             </div>
           </div>
           <h1>Admin UI for Google Sheets</h1>
-          <p className="auth-copy">Local first version with login, dashboard, batches, students, payments, and expenses.</p>
+          <p className="auth-copy">Login, dashboard, batches, students, payments, and expenses connected to Google Sheets.</p>
           <form className="auth-form" onSubmit={login}>
             <label><span>Admin password</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
             <button className="button button--primary button--block" disabled={busy} type="submit">Login</button>
           </form>
           {message ? <div className={`banner banner--${message.tone}`}>{message.text}</div> : null}
-          <p className="helper-text">Default local password is `admin123`.</p>
+          <p className="helper-text">Use your Apps Script admin password. The app expects live Apps Script environment configuration.</p>
         </section>
       </div>
     );
