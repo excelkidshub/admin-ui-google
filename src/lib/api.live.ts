@@ -12,8 +12,7 @@ import type {
 } from "../types";
 
 const SESSION_KEY = "excelkidshub-admin-google-session";
-const APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL ?? "";
-const ADMISSIONS_ENDPOINT = import.meta.env.VITE_ADMISSIONS_ENDPOINT ?? "";
+const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL ?? "/api/admin";
 
 type SessionState = {
   loggedIn: boolean;
@@ -45,16 +44,8 @@ function saveSession(session: SessionState) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
-function requireAppsScriptUrl() {
-  if (!APPS_SCRIPT_URL) {
-    throw new Error("VITE_GOOGLE_SCRIPT_URL is not configured");
-  }
-}
-
 async function postAppsScript<T>(payload: Record<string, unknown>): Promise<ApiEnvelope<T>> {
-  requireAppsScriptUrl();
-
-  const response = await fetch(APPS_SCRIPT_URL, {
+  const response = await fetch(ADMIN_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -118,24 +109,7 @@ function normalizeStudent(student: StudentRecord): StudentRecord {
 }
 
 async function submitAdmissionToLiveEndpoint(form: StudentForm) {
-  if (!ADMISSIONS_ENDPOINT) {
-    throw new Error("VITE_ADMISSIONS_ENDPOINT is not configured");
-  }
-
-  const response = await fetch(ADMISSIONS_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(toAdmissionsPayload(form))
-  });
-
-  const result = (await response.json()) as ApiEnvelope<never>;
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Unable to save admission");
-  }
-
-  return result;
+  return postAppsScript<never>(toAdmissionsPayload(form));
 }
 
 export const adminSession = {

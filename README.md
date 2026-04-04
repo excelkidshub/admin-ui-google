@@ -18,8 +18,7 @@ The app is designed to work against Google Apps Script.
 
 Set these env vars:
 
-- `VITE_ADMISSIONS_ENDPOINT=https://your-website-domain/api/register`
-- `VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/your-apps-script-deployment-id/exec`
+- `VITE_ADMIN_API_URL=/api/admin`
 
 ## Run
 
@@ -30,7 +29,7 @@ The admin login now uses the Apps Script `adminLogin` action, so use the same `A
 
 ## Next backend work
 
-Required Apps Script admin actions:
+Required Apps Script actions:
 
 - `login`
 - `getDashboard`
@@ -63,8 +62,15 @@ Current config locations:
 
 For the admin Vercel project, set:
 
-- `VITE_ADMISSIONS_ENDPOINT` in the admin project
-- `VITE_GOOGLE_SCRIPT_URL` in the admin project
+- `GOOGLE_SCRIPT_URL` in the Vercel project environment variables
+
+The browser calls:
+
+- `/api/admin`
+
+Then Vercel forwards that request to:
+
+- `GOOGLE_SCRIPT_URL`
 
 If the website Vercel project should use an env var instead of hardcoded Apps Script URL, set:
 
