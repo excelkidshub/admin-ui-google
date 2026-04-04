@@ -107,7 +107,8 @@ export default function App() {
   const [editingStudent, setEditingStudent] = useState(false);
   const [editingBatch, setEditingBatch] = useState(false);
   const [assignment, setAssignment] = useState({ admissionId: "", batchCode: "" });
-  const [search, setSearch] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
+  const [batchSearch, setBatchSearch] = useState("");
 
   const dashboard = useMemo(() => ({
     totalStudents: data.students.length,
@@ -120,10 +121,21 @@ export default function App() {
   }), [data]);
 
   const visibleStudents = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = studentSearch.trim().toLowerCase();
     if (!query) return data.students;
     return data.students.filter((item) => [item.studentName, item.parentName, item.mobile, item.batchCode].join(" ").toLowerCase().includes(query));
-  }, [data.students, search]);
+  }, [data.students, studentSearch]);
+
+  const visibleBatches = useMemo(() => {
+    const query = batchSearch.trim().toLowerCase();
+    if (!query) return data.batches;
+    return data.batches.filter((item) =>
+      [item.batchCode, item.batchName, item.level, item.mode, item.timing, item.days, item.location, item.status]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [batchSearch, data.batches]);
 
   const selectedStudent = useMemo(
     () => data.students.find((item) => item.admissionId === paymentForm.admissionId) ?? null,
@@ -297,12 +309,20 @@ export default function App() {
             </div>
             <div className="dashboard-grid">
               <section className="panel">
-                <div className="panel__header"><div><h3>Current batches</h3><p>Live batch overview.</p></div></div>
+                <div className="panel__header panel__header--stacked">
+                  <div><h3>Current batches</h3><p>Live batch overview.</p></div>
+                  <div className="toolbar">
+                    <label>
+                      <span>Filter batches</span>
+                      <input value={batchSearch} onChange={(event) => setBatchSearch(event.target.value)} placeholder="Search code, name, mode, level" />
+                    </label>
+                  </div>
+                </div>
                 <div className="table-wrap">
                   <table className="data-table">
                     <thead><tr><th>Code</th><th>Name</th><th>Mode</th><th>Timing</th><th>Students</th></tr></thead>
                     <tbody>
-                      {data.batches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.mode}</td><td>{batch.timing || "-"}</td><td>{data.students.filter((item) => item.batchCode === batch.batchCode).length} / {batch.capacity}</td></tr>)}
+                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.mode}</td><td>{batch.timing || "-"}</td><td>{data.students.filter((item) => item.batchCode === batch.batchCode).length} / {batch.capacity}</td></tr>)}
                     </tbody>
                   </table>
                 </div>
@@ -322,7 +342,7 @@ export default function App() {
             <section className="panel">
               <div className="panel__header panel__header--stacked">
                 <div><h3>Student admissions</h3><p>Manage registrations and fee status.</p></div>
-                <div className="toolbar"><label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search student, parent, mobile, batch" /></label></div>
+                <div className="toolbar"><label><span>Search students</span><input value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search student, parent, mobile, batch" /></label></div>
               </div>
               <div className="table-wrap">
                 <table className="data-table">
@@ -358,12 +378,20 @@ export default function App() {
           <section className="page-grid">
             <section className="stack">
               <section className="panel">
-                <div className="panel__header"><div><h3>Current batches</h3><p>Create and update scheduled batches.</p></div></div>
+                <div className="panel__header panel__header--stacked">
+                  <div><h3>Current batches</h3><p>Create and update scheduled batches.</p></div>
+                  <div className="toolbar">
+                    <label>
+                      <span>Search batches</span>
+                      <input value={batchSearch} onChange={(event) => setBatchSearch(event.target.value)} placeholder="Search code, name, level, timing" />
+                    </label>
+                  </div>
+                </div>
                 <div className="table-wrap">
                   <table className="data-table">
                     <thead><tr><th>Code</th><th>Name</th><th>Level</th><th>Mode</th><th>Status</th><th>Action</th></tr></thead>
                     <tbody>
-                      {data.batches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.status}</td><td><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); }} type="button">Edit</button></td></tr>)}
+                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.status}</td><td><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); }} type="button">Edit</button></td></tr>)}
                     </tbody>
                   </table>
                 </div>
