@@ -109,6 +109,7 @@ export default function App() {
   const [assignment, setAssignment] = useState({ admissionId: "", batchCode: "" });
   const [studentSearch, setStudentSearch] = useState("");
   const [batchSearch, setBatchSearch] = useState("");
+  const [selectedBatchCode, setSelectedBatchCode] = useState("");
 
   const dashboard = useMemo(() => ({
     totalStudents: data.students.length,
@@ -136,6 +137,19 @@ export default function App() {
         .includes(query)
     );
   }, [batchSearch, data.batches]);
+
+  const selectedBatch = useMemo(
+    () => data.batches.find((item) => item.batchCode === selectedBatchCode) ?? null,
+    [data.batches, selectedBatchCode]
+  );
+
+  const selectedBatchStudents = useMemo(() => {
+    if (!selectedBatchCode) {
+      return [];
+    }
+
+    return data.students.filter((item) => item.batchCode === selectedBatchCode);
+  }, [data.students, selectedBatchCode]);
 
   const selectedStudent = useMemo(
     () => data.students.find((item) => item.admissionId === paymentForm.admissionId) ?? null,
@@ -320,9 +334,9 @@ export default function App() {
                 </div>
                 <div className="table-wrap">
                   <table className="data-table">
-                    <thead><tr><th>Code</th><th>Name</th><th>Mode</th><th>Timing</th><th>Students</th></tr></thead>
+                    <thead><tr><th>Code</th><th>Name</th><th>Mode</th><th>Timing</th><th>Students</th><th>Action</th></tr></thead>
                     <tbody>
-                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.mode}</td><td>{batch.timing || "-"}</td><td>{data.students.filter((item) => item.batchCode === batch.batchCode).length} / {batch.capacity}</td></tr>)}
+                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.mode}</td><td>{batch.timing || "-"}</td><td>{data.students.filter((item) => item.batchCode === batch.batchCode).length} / {batch.capacity}</td><td><button className="button button--ghost" onClick={() => { setSelectedBatchCode(batch.batchCode); setActiveView("batches"); }} type="button">View</button></td></tr>)}
                     </tbody>
                   </table>
                 </div>
@@ -391,11 +405,65 @@ export default function App() {
                   <table className="data-table">
                     <thead><tr><th>Code</th><th>Name</th><th>Level</th><th>Mode</th><th>Status</th><th>Action</th></tr></thead>
                     <tbody>
-                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.status}</td><td><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); }} type="button">Edit</button></td></tr>)}
+                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.status}</td><td><div className="actions"><button className="button button--ghost" onClick={() => setSelectedBatchCode(batch.batchCode)} type="button">View</button><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); setSelectedBatchCode(batch.batchCode); }} type="button">Edit</button></div></td></tr>)}
                     </tbody>
                   </table>
                 </div>
               </section>
+              {selectedBatch ? (
+                <section className="panel">
+                  <div className="panel__header panel__header--stacked">
+                    <div>
+                      <h3>Batch details</h3>
+                      <p>{selectedBatch.batchCode} - {selectedBatch.batchName}</p>
+                    </div>
+                    <div className="toolbar">
+                      <button className="button button--ghost" onClick={() => setSelectedBatchCode("")} type="button">Clear selection</button>
+                    </div>
+                  </div>
+                  <div className="stat-grid">
+                    <article className="stat-card"><span>Students</span><strong>{selectedBatchStudents.length}</strong><small>{selectedBatch.capacity} capacity</small></article>
+                    <article className="stat-card"><span>Collected</span><strong>{formatCurrency(selectedBatchStudents.reduce((sum, item) => sum + item.totalPaid, 0))}</strong><small>Fee received</small></article>
+                    <article className="stat-card stat-card--warn"><span>Pending</span><strong>{formatCurrency(selectedBatchStudents.reduce((sum, item) => sum + item.pending, 0))}</strong><small>Outstanding fee</small></article>
+                    <article className="stat-card"><span>Schedule</span><strong>{selectedBatch.timing || "-"}</strong><small>{selectedBatch.days || selectedBatch.mode}</small></article>
+                  </div>
+                  <div className="list-stack">
+                    <div className="list-card">
+                      <div><strong>Level</strong><span>{selectedBatch.level}</span></div>
+                      <div><strong>Status</strong><small>{selectedBatch.status}</small></div>
+                    </div>
+                    <div className="list-card">
+                      <div><strong>Dates</strong><span>{selectedBatch.startDate || "-"} to {selectedBatch.endDate || "-"}</span></div>
+                      <div><strong>Location</strong><small>{selectedBatch.location || "-"}</small></div>
+                    </div>
+                    <div className="list-card">
+                      <div><strong>Notes</strong><span>{selectedBatch.notes || "No notes added yet."}</span></div>
+                    </div>
+                  </div>
+                  <div className="table-wrap">
+                    <table className="data-table">
+                      <thead><tr><th>ID</th><th>Student</th><th>Status</th><th>Total Fee</th><th>Paid</th><th>Pending</th><th>Payment</th></tr></thead>
+                      <tbody>
+                        {selectedBatchStudents.length ? selectedBatchStudents.map((student) => (
+                          <tr key={student.admissionId}>
+                            <td>{student.admissionId}</td>
+                            <td>{student.studentName}</td>
+                            <td>{student.status}</td>
+                            <td>{formatCurrency(student.totalFee)}</td>
+                            <td>{formatCurrency(student.totalPaid)}</td>
+                            <td>{formatCurrency(student.pending)}</td>
+                            <td>{student.paymentStatus}</td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={7}>No students are assigned to this batch yet.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ) : null}
               <form className="panel" onSubmit={assignBatch}>
                 <div className="panel__header"><div><h3>Assign student to batch</h3><p>Move a student into a running batch.</p></div></div>
                 <div className="form-grid compact-grid">
