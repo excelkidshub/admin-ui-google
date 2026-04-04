@@ -410,60 +410,6 @@ export default function App() {
                   </table>
                 </div>
               </section>
-              {selectedBatch ? (
-                <section className="panel">
-                  <div className="panel__header panel__header--stacked">
-                    <div>
-                      <h3>Batch details</h3>
-                      <p>{selectedBatch.batchCode} - {selectedBatch.batchName}</p>
-                    </div>
-                    <div className="toolbar">
-                      <button className="button button--ghost" onClick={() => setSelectedBatchCode("")} type="button">Clear selection</button>
-                    </div>
-                  </div>
-                  <div className="stat-grid">
-                    <article className="stat-card"><span>Students</span><strong>{selectedBatchStudents.length}</strong><small>{selectedBatch.capacity} capacity</small></article>
-                    <article className="stat-card"><span>Collected</span><strong>{formatCurrency(selectedBatchStudents.reduce((sum, item) => sum + item.totalPaid, 0))}</strong><small>Fee received</small></article>
-                    <article className="stat-card stat-card--warn"><span>Pending</span><strong>{formatCurrency(selectedBatchStudents.reduce((sum, item) => sum + item.pending, 0))}</strong><small>Outstanding fee</small></article>
-                    <article className="stat-card"><span>Schedule</span><strong>{selectedBatch.timing || "-"}</strong><small>{selectedBatch.days || selectedBatch.mode}</small></article>
-                  </div>
-                  <div className="list-stack">
-                    <div className="list-card">
-                      <div><strong>Level</strong><span>{selectedBatch.level}</span></div>
-                      <div><strong>Status</strong><small>{selectedBatch.status}</small></div>
-                    </div>
-                    <div className="list-card">
-                      <div><strong>Dates</strong><span>{selectedBatch.startDate || "-"} to {selectedBatch.endDate || "-"}</span></div>
-                      <div><strong>Location</strong><small>{selectedBatch.location || "-"}</small></div>
-                    </div>
-                    <div className="list-card">
-                      <div><strong>Notes</strong><span>{selectedBatch.notes || "No notes added yet."}</span></div>
-                    </div>
-                  </div>
-                  <div className="table-wrap">
-                    <table className="data-table">
-                      <thead><tr><th>ID</th><th>Student</th><th>Status</th><th>Total Fee</th><th>Paid</th><th>Pending</th><th>Payment</th></tr></thead>
-                      <tbody>
-                        {selectedBatchStudents.length ? selectedBatchStudents.map((student) => (
-                          <tr key={student.admissionId}>
-                            <td>{student.admissionId}</td>
-                            <td>{student.studentName}</td>
-                            <td>{student.status}</td>
-                            <td>{formatCurrency(student.totalFee)}</td>
-                            <td>{formatCurrency(student.totalPaid)}</td>
-                            <td>{formatCurrency(student.pending)}</td>
-                            <td>{student.paymentStatus}</td>
-                          </tr>
-                        )) : (
-                          <tr>
-                            <td colSpan={7}>No students are assigned to this batch yet.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              ) : null}
               <form className="panel" onSubmit={assignBatch}>
                 <div className="panel__header"><div><h3>Assign student to batch</h3><p>Move a student into a running batch.</p></div></div>
                 <div className="form-grid compact-grid">
@@ -542,6 +488,62 @@ export default function App() {
           </section>
         ) : null}
       </main>
+      {selectedBatch ? (
+        <div className="modal-backdrop" onClick={() => setSelectedBatchCode("")} role="presentation">
+          <section className="detail-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="batch-detail-title">
+            <div className="panel__header panel__header--stacked detail-modal__header">
+              <div>
+                <p className="eyebrow">Batch details</p>
+                <h3 id="batch-detail-title">{selectedBatch.batchCode} - {selectedBatch.batchName}</h3>
+                <p>{selectedBatch.level} | {selectedBatch.mode} | {selectedBatch.status}</p>
+              </div>
+              <div className="toolbar">
+                <button className="button button--ghost" onClick={() => { setBatchForm(selectedBatch); setEditingBatch(true); }} type="button">Edit batch</button>
+                <button className="button button--ghost" onClick={() => setSelectedBatchCode("")} type="button">Close</button>
+              </div>
+            </div>
+            <div className="detail-modal__body">
+              <div className="detail-modal__stats">
+                <article className="stat-card"><span>Students</span><strong>{selectedBatchStudents.length}</strong><small>{selectedBatch.capacity} capacity</small></article>
+                <article className="stat-card"><span>Collected</span><strong>{formatCurrency(selectedBatchStudents.reduce((sum, item) => sum + item.totalPaid, 0))}</strong><small>Fee received</small></article>
+                <article className="stat-card stat-card--warn"><span>Pending</span><strong>{formatCurrency(selectedBatchStudents.reduce((sum, item) => sum + item.pending, 0))}</strong><small>Outstanding fee</small></article>
+                <article className="stat-card"><span>Schedule</span><strong>{selectedBatch.timing || "-"}</strong><small>{selectedBatch.days || selectedBatch.mode}</small></article>
+              </div>
+              <div className="list-stack detail-modal__info">
+                <div className="list-card">
+                  <div><strong>Dates</strong><span>{selectedBatch.startDate || "-"} to {selectedBatch.endDate || "-"}</span></div>
+                  <div><strong>Location</strong><small>{selectedBatch.location || "-"}</small></div>
+                </div>
+                <div className="list-card">
+                  <div><strong>Notes</strong><span>{selectedBatch.notes || "No notes added yet."}</span></div>
+                </div>
+              </div>
+              <div className="table-wrap detail-modal__table">
+                <table className="data-table">
+                  <thead><tr><th>ID</th><th>Student</th><th>Status</th><th>Total Fee</th><th>Paid</th><th>Pending</th><th>Payment</th></tr></thead>
+                  <tbody>
+                    {selectedBatchStudents.length ? selectedBatchStudents.map((student) => (
+                      <tr key={student.admissionId}>
+                        <td>{student.admissionId}</td>
+                        <td>{student.studentName}</td>
+                        <td>{student.status}</td>
+                        <td>{formatCurrency(student.totalFee)}</td>
+                        <td>{formatCurrency(student.totalPaid)}</td>
+                        <td>{formatCurrency(student.pending)}</td>
+                        <td>{student.paymentStatus}</td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={7}>No students are assigned to this batch yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
