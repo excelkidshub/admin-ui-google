@@ -405,7 +405,7 @@ export default function App() {
                   <table className="data-table">
                     <thead><tr><th>Code</th><th>Name</th><th>Level</th><th>Mode</th><th>Status</th><th>Action</th></tr></thead>
                     <tbody>
-                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.status}</td><td><div className="actions"><button className="button button--ghost" onClick={() => setSelectedBatchCode(batch.batchCode)} type="button">View</button><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); setSelectedBatchCode(batch.batchCode); }} type="button">Edit</button></div></td></tr>)}
+                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.status}</td><td><div className="actions"><button className="button button--ghost" onClick={() => setSelectedBatchCode(batch.batchCode)} type="button">View</button><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); setSelectedBatchCode(""); }} type="button">Edit</button></div></td></tr>)}
                     </tbody>
                   </table>
                 </div>
@@ -498,7 +498,7 @@ export default function App() {
                 <p>{selectedBatch.level} | {selectedBatch.mode} | {selectedBatch.status}</p>
               </div>
               <div className="toolbar">
-                <button className="button button--ghost" onClick={() => { setBatchForm(selectedBatch); setEditingBatch(true); }} type="button">Edit batch</button>
+                <button className="button button--ghost" onClick={() => { setBatchForm(selectedBatch); setEditingBatch(true); setSelectedBatchCode(""); }} type="button">Edit batch</button>
                 <button className="button button--ghost" onClick={() => setSelectedBatchCode("")} type="button">Close</button>
               </div>
             </div>
