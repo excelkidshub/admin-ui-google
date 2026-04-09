@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { adminApi, adminSession } from "./lib/api.live";
-import type { AdminData, BatchForm, ExpenseForm, LearningMode, PaymentForm, PaymentMode, StudentForm, ViewKey } from "./types";
+import type { AdminData, BatchForm, ExpenseForm, LearningMode, PaymentEmailKind, PaymentForm, PaymentMode, StudentForm, ViewKey } from "./types";
 
 const views: { key: ViewKey; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },
@@ -156,6 +156,11 @@ export default function App() {
     [data.students, paymentForm.admissionId]
   );
 
+  const feeFollowUpStudents = useMemo(
+    () => data.students.filter((item) => item.email && (item.pending > 0 || item.paymentStatus === "Paid" || item.totalPaid > 0)),
+    [data.students]
+  );
+
   async function runTask(task: () => Promise<void>, success?: string) {
     setBusy(true);
     setMessage(null);
@@ -228,15 +233,35 @@ export default function App() {
 
   async function savePayment(event: FormEvent) {
     event.preventDefault();
-    await runTask(async () => {
-      await adminApi.createPayment({
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await adminApi.createPayment({
         ...paymentForm,
         studentName: selectedStudent?.studentName ?? "",
         batchCode: selectedStudent?.batchCode ?? ""
       });
       setPaymentForm(emptyPaymentForm());
       await refresh();
-    }, "Payment saved.");
+      setMessage({ tone: "success", text: result.message || "Payment saved." });
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : "Something went wrong" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendEmailAction(admissionId: string, emailType: PaymentEmailKind, paymentId = "") {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await adminApi.sendPaymentEmail(admissionId, emailType, paymentId);
+      setMessage({ tone: "success", text: result.message });
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : "Something went wrong" });
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function saveExpense(event: FormEvent) {
@@ -439,24 +464,65 @@ export default function App() {
 
         {activeView === "payments" ? (
           <section className="page-grid">
-            <section className="panel">
-              <div className="panel__header"><div><h3>Payment history</h3><p>Records from the payments sheet.</p></div></div>
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead><tr><th>ID</th><th>Student</th><th>Date</th><th>Mode</th><th>Amount</th></tr></thead>
-                  <tbody>{data.payments.map((payment) => <tr key={payment.paymentId}><td>{payment.paymentId}</td><td>{payment.studentName}</td><td>{payment.paymentDate}</td><td>{payment.paymentMode}</td><td>{formatCurrency(payment.amount)}</td></tr>)}</tbody>
-                </table>
-              </div>
+            <section className="stack">
+              <section className="panel">
+                <div className="panel__header"><div><h3>Payment history</h3><p>Records from the payments sheet.</p></div></div>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead><tr><th>ID</th><th>Student</th><th>Date</th><th>Mode</th><th>Amount</th><th>Transaction</th><th>Action</th></tr></thead>
+                    <tbody>
+                      {data.payments.map((payment) => (
+                        <tr key={payment.paymentId}>
+                          <td>{payment.paymentId}</td>
+                          <td>{payment.studentName}</td>
+                          <td>{payment.paymentDate}</td>
+                          <td>{payment.paymentMode}</td>
+                          <td>{formatCurrency(payment.amount)}</td>
+                          <td>{payment.transactionId || "-"}</td>
+                          <td><div className="table-actions"><button className="button button--ghost" disabled={busy} onClick={() => void sendEmailAction(payment.admissionId, "receipt", payment.paymentId)} type="button">Send receipt</button></div></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="panel">
+                <div className="panel__header"><div><h3>Fee email actions</h3><p>Send reminders and full-payment emails to parents directly from admin.</p></div></div>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Pending</th><th>Action</th></tr></thead>
+                    <tbody>
+                      {feeFollowUpStudents.map((student) => (
+                        <tr key={student.admissionId}>
+                          <td>{student.studentName}</td>
+                          <td>{student.email || "-"}</td>
+                          <td>{student.paymentStatus}</td>
+                          <td>{formatCurrency(student.pending)}</td>
+                          <td>
+                            <div className="table-actions">
+                              <button className="button button--ghost" disabled={busy || !student.email || student.pending <= 0} onClick={() => void sendEmailAction(student.admissionId, "pending-reminder")} type="button">Pending reminder</button>
+                              <button className="button button--ghost" disabled={busy || !student.email || student.paymentStatus !== "Paid"} onClick={() => void sendEmailAction(student.admissionId, "full-payment")} type="button">Full payment</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </section>
             <form className="panel" onSubmit={savePayment}>
-              <div className="panel__header"><div><h3>Create payment record</h3><p>Add a new fee collection entry.</p></div></div>
+              <div className="panel__header"><div><h3>Create payment record</h3><p>Add a new fee collection entry and optionally email the parent.</p></div></div>
               <div className="form-grid">
                 <label><span>Student</span><select value={paymentForm.admissionId} onChange={(event) => setPaymentForm((current) => ({ ...current, admissionId: event.target.value }))} required><option value="">Select student</option>{data.students.map((student) => <option key={student.admissionId} value={student.admissionId}>{student.studentName} ({student.admissionId})</option>)}</select></label>
                 <label><span>Amount</span><input type="number" min="1" value={paymentForm.amount} onChange={(event) => setPaymentForm((current) => ({ ...current, amount: Number(event.target.value) }))} required /></label>
                 <label><span>Date</span><input type="date" value={paymentForm.paymentDate} onChange={(event) => setPaymentForm((current) => ({ ...current, paymentDate: event.target.value }))} /></label>
                 <label><span>Mode</span><select value={paymentForm.paymentMode} onChange={(event) => setPaymentForm((current) => ({ ...current, paymentMode: event.target.value as PaymentMode }))}>{paymentModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select></label>
+                <label><span>Transaction ID</span><input value={paymentForm.transactionId} onChange={(event) => setPaymentForm((current) => ({ ...current, transactionId: event.target.value }))} placeholder="Optional reference number" /></label>
+                <label className="field--full"><span>Notes</span><textarea rows={3} value={paymentForm.notes} onChange={(event) => setPaymentForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Optional payment note for receipt or follow-up" /></label>
               </div>
-              {selectedStudent ? <div className="summary-bar"><span>Total fee: {formatCurrency(selectedStudent.totalFee)}</span><span>Paid: {formatCurrency(selectedStudent.totalPaid)}</span><span>Pending: {formatCurrency(selectedStudent.pending)}</span></div> : null}
+              {selectedStudent ? <div className="summary-bar"><span>Total fee: {formatCurrency(selectedStudent.totalFee)}</span><span>Paid: {formatCurrency(selectedStudent.totalPaid)}</span><span>Pending: {formatCurrency(selectedStudent.pending)}</span><span>Email: {selectedStudent.email || "-"}</span><span>Status: {selectedStudent.paymentStatus}</span></div> : null}
               <div className="actions"><button className="button button--primary" disabled={busy} type="submit">Save payment</button></div>
             </form>
           </section>

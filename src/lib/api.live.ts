@@ -5,6 +5,8 @@ import type {
   DashboardSummary,
   ExpenseForm,
   ExpenseRecord,
+  PaymentCreateResult,
+  PaymentEmailKind,
   PaymentForm,
   PaymentRecord,
   StudentForm,
@@ -24,6 +26,10 @@ type ApiEnvelope<T> = {
   message?: string;
   adminToken?: string;
   admissionId?: string;
+  paymentId?: string;
+  paymentStatus?: string;
+  pending?: number;
+  totalPaid?: number;
   data?: T;
 };
 
@@ -207,13 +213,33 @@ export const adminApi = {
     });
   },
 
-  async createPayment(form: PaymentForm) {
-    await postAppsScript<never>({
+  async createPayment(form: PaymentForm & { sendReceiptEmail?: boolean; sendFullPaymentEmail?: boolean }): Promise<PaymentCreateResult> {
+    const result = await postAppsScript<never>({
       action: "savePayment",
       adminToken: adminSession.getToken(),
       ...form
     });
-    return form;
+    return {
+      message: result.message || "Payment saved successfully",
+      paymentId: result.paymentId || "",
+      paymentStatus: (result.paymentStatus as PaymentCreateResult["paymentStatus"]) || "Pending",
+      pending: Number(result.pending ?? 0),
+      totalPaid: Number(result.totalPaid ?? 0)
+    };
+  },
+
+  async sendPaymentEmail(admissionId: string, emailType: PaymentEmailKind, paymentId = "") {
+    const result = await postAppsScript<never>({
+      action: "sendPaymentEmail",
+      adminToken: adminSession.getToken(),
+      admissionId,
+      paymentId,
+      emailType
+    });
+
+    return {
+      message: result.message || "Email sent successfully"
+    };
   },
 
   async createExpense(form: ExpenseForm) {

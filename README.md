@@ -11,6 +11,7 @@ React admin UI for the Google Sheets based workflow.
 - student to batch assignment
 - payment record creation
 - expense record creation
+- payment receipt / reminder email actions
 
 ## Current data mode
 
@@ -41,9 +42,24 @@ Required Apps Script actions:
 - `updateBatch`
 - `assignStudentToBatch`
 - `savePayment`
+- `sendPaymentEmail`
 - `saveExpense`
 - `getPayments`
 - `getExpenses`
+
+## Payment email flow
+
+The payments screen now supports:
+
+- send receipt PDF while saving a payment
+- send full payment confirmation when balance becomes zero
+- resend receipt from payment history
+- send pending payment reminder from admin
+
+Apps Script must have:
+
+- `09_PaymentEmails.gs`
+- a Google Docs template named `ExcelKidsHub Receipt Template`, or `RECEIPT_TEMPLATE_ID`
 
 ## Current live connection path
 

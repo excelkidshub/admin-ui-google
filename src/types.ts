@@ -5,6 +5,7 @@ export type PaymentStatus = "Pending" | "Partial" | "Paid";
 export type BatchStatus = "Upcoming" | "Active" | "Completed";
 export type PaymentMode = "UPI" | "Cash" | "Bank Transfer";
 export type ExpenseCategory = "Rent" | "Salary" | "Stationery" | "Marketing" | "Utilities" | "Other";
+export type PaymentEmailKind = "receipt" | "full-payment" | "pending-reminder";
 
 export type StudentRecord = {
   admissionId: string;
@@ -96,3 +97,11 @@ export type StudentForm = Omit<StudentRecord, "adjustedFee" | "pending" | "payme
 export type BatchForm = BatchRecord;
 export type PaymentForm = Omit<PaymentRecord, "paymentId">;
 export type ExpenseForm = Omit<ExpenseRecord, "expenseId">;
+
+export type PaymentCreateResult = {
+  message: string;
+  paymentId: string;
+  paymentStatus: PaymentStatus;
+  pending: number;
+  totalPaid: number;
+};
