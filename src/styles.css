@@ -164,19 +164,43 @@ textarea:focus {
   display: grid;
   grid-template-columns: 280px 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.admin-shell--collapsed {
+  grid-template-columns: 84px 1fr;
 }
 
 .sidebar {
+  position: relative;
   padding: 2rem 1.25rem;
   color: #f8fbff;
   background:
     linear-gradient(180deg, rgba(24, 48, 65, 0.98) 0%, rgba(33, 49, 77, 0.98) 100%);
+  transition: padding 0.2s ease;
+}
+
+.sidebar--collapsed {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 
 .sidebar .eyebrow,
 .sidebar__brand span,
 .nav-button {
   color: rgba(255, 255, 255, 0.82);
+}
+
+.sidebar__brand-copy,
+.sidebar__brand span {
+  transition: opacity 0.15s ease;
+}
+
+.sidebar__brand-copy--hidden {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
 }
 
 .nav-button {
@@ -188,11 +212,28 @@ textarea:focus {
   border: 1px solid transparent;
 }
 
+.nav-button--collapsed {
+  text-align: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
 .nav-button--active,
 .nav-button:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(250, 204, 21, 0.24);
   color: #fff;
+}
+
+.sidebar-toggle {
+  width: 100%;
+  margin: 0.35rem 0 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  font-weight: 700;
 }
 
 .content {
@@ -232,6 +273,46 @@ textarea:focus {
 .chip--busy {
   background: #fff3dd;
   border-color: #e9c984;
+}
+
+.mobile-nav {
+  display: none;
+  position: relative;
+}
+
+.mobile-nav__trigger {
+  min-width: 88px;
+}
+
+.mobile-nav__menu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  border-radius: 14px;
+  border: 1px solid var(--ekh-border);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 32px rgba(24, 48, 65, 0.12);
+}
+
+.mobile-nav__item {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ekh-text);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.mobile-nav__item--active,
+.mobile-nav__item:hover {
+  background: var(--ekh-sky);
+  border-color: var(--ekh-border);
 }
 
 .dashboard-grid,
@@ -668,6 +749,10 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .sidebar {
+    display: none;
+  }
+
   .content,
   .sidebar {
     padding: 1.2rem;
@@ -696,5 +781,9 @@ textarea:focus {
 
   .detail-modal__body {
     max-height: calc(100vh - 8rem);
+  }
+
+  .mobile-nav {
+    display: block;
   }
 }

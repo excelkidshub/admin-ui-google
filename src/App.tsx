@@ -120,6 +120,8 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(adminSession.isLoggedIn());
   const [password, setPassword] = useState("");
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [data, setData] = useState<AdminData>({ students: [], batches: [], payments: [], expenses: [] });
@@ -253,6 +255,10 @@ export default function App() {
     }
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [activeView]);
+
   async function login(event: FormEvent) {
     event.preventDefault();
     await runTask(async () => {
@@ -371,22 +377,25 @@ export default function App() {
   }
 
   return (
-    <div className="admin-shell">
-      <aside className="sidebar">
+    <div className={`admin-shell ${sidebarCollapsed ? "admin-shell--collapsed" : ""}`}>
+      <aside className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}>
         <div className="sidebar__brand">
           <div className="brand-lockup brand-lockup--sidebar">
             <div className="brand-mark" aria-hidden="true">E</div>
-            <div>
+            <div className={`sidebar__brand-copy ${sidebarCollapsed ? "sidebar__brand-copy--hidden" : ""}`}>
               <p className="eyebrow">ExcelKidsHub</p>
               <h1>Admin Google</h1>
             </div>
           </div>
-          <span>Google Sheet operations panel</span>
+          <span className={sidebarCollapsed ? "sidebar__brand-copy--hidden" : ""}>Google Sheet operations panel</span>
         </div>
+        <button className="sidebar-toggle" onClick={() => setSidebarCollapsed((current) => !current)} type="button" aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          {sidebarCollapsed ? "»" : "«"}
+        </button>
         <nav className="sidebar__nav">
           {views.map((view) => (
-            <button className={`nav-button ${activeView === view.key ? "nav-button--active" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button">
-              <strong>{view.label}</strong>
+            <button className={`nav-button ${activeView === view.key ? "nav-button--active" : ""} ${sidebarCollapsed ? "nav-button--collapsed" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button" title={view.label}>
+              <strong>{sidebarCollapsed ? view.label.slice(0, 1) : view.label}</strong>
             </button>
           ))}
         </nav>
@@ -400,6 +409,20 @@ export default function App() {
             <p className="subtle-copy">ExcelKidsHub style admin workspace for admissions, batches, fees, and expenses.</p>
           </div>
           <div className="topbar__actions">
+            <div className="mobile-nav">
+              <button className="button button--ghost mobile-nav__trigger" onClick={() => setMobileNavOpen((current) => !current)} type="button" aria-expanded={mobileNavOpen}>
+                Menu
+              </button>
+              {mobileNavOpen ? (
+                <div className="mobile-nav__menu">
+                  {views.map((view) => (
+                    <button className={`mobile-nav__item ${activeView === view.key ? "mobile-nav__item--active" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button">
+                      {view.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <span className={`chip ${busy ? "chip--busy" : ""}`}>{busy ? "Working..." : "Ready"}</span>
             <button className="button button--ghost" onClick={() => void runTask(refresh)} type="button">Refresh</button>
             <button className="button button--ghost" onClick={() => { adminSession.logout(); setIsLoggedIn(false); }} type="button">Logout</button>
