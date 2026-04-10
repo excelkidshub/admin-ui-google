@@ -120,8 +120,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(adminSession.isLoggedIn());
   const [password, setPassword] = useState("");
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [data, setData] = useState<AdminData>({ students: [], batches: [], payments: [], expenses: [] });
@@ -256,7 +255,7 @@ export default function App() {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    setMobileNavOpen(false);
+    setNavOpen(false);
   }, [activeView]);
 
   async function login(event: FormEvent) {
@@ -377,7 +376,7 @@ export default function App() {
   }
 
   return (
-    <div className={`admin-shell ${sidebarCollapsed ? "admin-shell--collapsed" : ""}`}>
+    <div className="admin-shell">
       {busy ? (
         <div className="loader-overlay" role="status" aria-live="polite" aria-label="Loading">
           <div className="loader-dialog">
@@ -387,24 +386,25 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      <aside className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}>
+      {navOpen ? <button className="nav-overlay" onClick={() => setNavOpen(false)} type="button" aria-label="Close menu" /> : null}
+      <aside className={`sidebar ${navOpen ? "sidebar--open" : ""}`}>
         <div className="sidebar__brand">
           <div className="brand-lockup brand-lockup--sidebar">
             <div className="brand-mark" aria-hidden="true">E</div>
-            <div className={`sidebar__brand-copy ${sidebarCollapsed ? "sidebar__brand-copy--hidden" : ""}`}>
+            <div className="sidebar__brand-copy">
               <p className="eyebrow">ExcelKidsHub</p>
               <h1>Admin Google</h1>
             </div>
           </div>
-          <span className={sidebarCollapsed ? "sidebar__brand-copy--hidden" : ""}>Google Sheet operations panel</span>
+          <span>Google Sheet operations panel</span>
         </div>
-        <button className="sidebar-toggle" onClick={() => setSidebarCollapsed((current) => !current)} type="button" aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
-          {sidebarCollapsed ? "»" : "«"}
+        <button className="sidebar-close" onClick={() => setNavOpen(false)} type="button" aria-label="Close menu">
+          Close
         </button>
         <nav className="sidebar__nav">
           {views.map((view) => (
-            <button className={`nav-button ${activeView === view.key ? "nav-button--active" : ""} ${sidebarCollapsed ? "nav-button--collapsed" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button" title={view.label}>
-              <strong>{sidebarCollapsed ? view.label.slice(0, 1) : view.label}</strong>
+            <button className={`nav-button ${activeView === view.key ? "nav-button--active" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button" title={view.label}>
+              <strong>{view.label}</strong>
             </button>
           ))}
         </nav>
@@ -412,10 +412,17 @@ export default function App() {
 
       <main className="content">
         <header className="topbar">
-          <div>
+          <div className="topbar__title">
+            <button className="menu-toggle" onClick={() => setNavOpen(true)} type="button" aria-label="Open menu">
+              <span />
+              <span />
+              <span />
+            </button>
+            <div>
             <p className="eyebrow">Operations</p>
             <h2>{views.find((view) => view.key === activeView)?.label}</h2>
             <p className="subtle-copy">ExcelKidsHub style admin workspace for admissions, batches, fees, and expenses.</p>
+            </div>
           </div>
           <div className="topbar__actions">
             <span className={`chip ${busy ? "chip--busy" : ""}`}>{busy ? "Working..." : "Ready"}</span>
@@ -423,21 +430,6 @@ export default function App() {
             <button className="button button--ghost" onClick={() => { adminSession.logout(); setIsLoggedIn(false); }} type="button">Logout</button>
           </div>
         </header>
-
-        <section className="mobile-nav-bar">
-          <button className="button button--ghost mobile-nav__trigger" onClick={() => setMobileNavOpen((current) => !current)} type="button" aria-expanded={mobileNavOpen}>
-            {views.find((view) => view.key === activeView)?.label} Menu
-          </button>
-          {mobileNavOpen ? (
-            <div className="mobile-nav__menu">
-              {views.map((view) => (
-                <button className={`mobile-nav__item ${activeView === view.key ? "mobile-nav__item--active" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button">
-                  {view.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </section>
 
         {message ? <div className={`banner banner--${message.tone}`}>{message.text}</div> : null}
 

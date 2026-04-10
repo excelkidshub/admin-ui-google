@@ -161,46 +161,43 @@ textarea:focus {
 }
 
 .admin-shell {
-  display: grid;
-  grid-template-columns: 280px 1fr;
+  position: relative;
+  display: block;
   min-height: 100vh;
-  transition: grid-template-columns 0.2s ease;
-}
-
-.admin-shell--collapsed {
-  grid-template-columns: 84px 1fr;
 }
 
 .sidebar {
-  position: relative;
-  padding: 2rem 1.25rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, calc(100vw - 24px));
+  padding: 1.4rem 1.1rem;
   color: #f8fbff;
   background:
     linear-gradient(180deg, rgba(24, 48, 65, 0.98) 0%, rgba(33, 49, 77, 0.98) 100%);
-  transition: padding 0.2s ease;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  z-index: 70;
+  overflow-y: auto;
 }
 
-.sidebar--collapsed {
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
+.sidebar--open {
+  transform: translateX(0);
+}
+
+.nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  border: 0;
+  background: rgba(24, 48, 65, 0.32);
 }
 
 .sidebar .eyebrow,
 .sidebar__brand span,
 .nav-button {
   color: rgba(255, 255, 255, 0.82);
-}
-
-.sidebar__brand-copy,
-.sidebar__brand span {
-  transition: opacity 0.15s ease;
-}
-
-.sidebar__brand-copy--hidden {
-  opacity: 0;
-  pointer-events: none;
-  height: 0;
-  overflow: hidden;
 }
 
 .nav-button {
@@ -212,12 +209,6 @@ textarea:focus {
   border: 1px solid transparent;
 }
 
-.nav-button--collapsed {
-  text-align: center;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-}
-
 .nav-button--active,
 .nav-button:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -225,7 +216,7 @@ textarea:focus {
   color: #fff;
 }
 
-.sidebar-toggle {
+.sidebar-close {
   width: 100%;
   margin: 0.35rem 0 0.9rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -238,6 +229,36 @@ textarea:focus {
 
 .content {
   padding: 1.7rem;
+}
+
+.topbar__title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.menu-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.28rem;
+  width: 46px;
+  height: 46px;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: 1px solid var(--ekh-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(24, 48, 65, 0.06);
+}
+
+.menu-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: var(--ekh-navy);
 }
 
 .topbar,
@@ -273,54 +294,6 @@ textarea:focus {
 .chip--busy {
   background: #fff3dd;
   border-color: #e9c984;
-}
-
-.mobile-nav {
-  display: none;
-  position: relative;
-}
-
-.mobile-nav-bar {
-  display: none;
-  position: relative;
-  margin-bottom: 0.9rem;
-}
-
-.mobile-nav__trigger {
-  width: 100%;
-  min-width: 88px;
-  justify-content: center;
-}
-
-.mobile-nav__menu {
-  position: absolute;
-  top: calc(100% + 0.45rem);
-  left: 0;
-  right: 0;
-  z-index: 20;
-  display: grid;
-  gap: 0.35rem;
-  padding: 0.55rem;
-  border-radius: 14px;
-  border: 1px solid var(--ekh-border);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 14px 32px rgba(24, 48, 65, 0.12);
-}
-
-.mobile-nav__item {
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ekh-text);
-  border-radius: 10px;
-  padding: 0.65rem 0.8rem;
-  text-align: left;
-  font-weight: 600;
-}
-
-.mobile-nav__item--active,
-.mobile-nav__item:hover {
-  background: var(--ekh-sky);
-  border-color: var(--ekh-border);
 }
 
 .dashboard-grid,
@@ -792,14 +765,6 @@ textarea:focus {
 }
 
 @media (max-width: 820px) {
-  .admin-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    display: none;
-  }
-
   .content,
   .sidebar {
     padding: 1.2rem;
@@ -828,13 +793,5 @@ textarea:focus {
 
   .detail-modal__body {
     max-height: calc(100vh - 8rem);
-  }
-
-  .mobile-nav {
-    display: none;
-  }
-
-  .mobile-nav-bar {
-    display: block;
   }
 }
