@@ -378,6 +378,15 @@ export default function App() {
 
   return (
     <div className={`admin-shell ${sidebarCollapsed ? "admin-shell--collapsed" : ""}`}>
+      {busy ? (
+        <div className="loader-overlay" role="status" aria-live="polite" aria-label="Loading">
+          <div className="loader-dialog">
+            <div className="loader-spinner" aria-hidden="true" />
+            <strong>Working...</strong>
+            <span>Please wait while data is loading or saving.</span>
+          </div>
+        </div>
+      ) : null}
       <aside className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}>
         <div className="sidebar__brand">
           <div className="brand-lockup brand-lockup--sidebar">

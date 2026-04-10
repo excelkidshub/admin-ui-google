@@ -537,6 +537,45 @@ textarea:focus {
   z-index: 40;
 }
 
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(24, 48, 65, 0.28);
+  backdrop-filter: blur(3px);
+}
+
+.loader-dialog {
+  min-width: min(320px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 18px;
+  border: 1px solid var(--ekh-border);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 50px rgba(24, 48, 65, 0.18);
+  text-align: center;
+}
+
+.loader-spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 4px solid rgba(33, 49, 77, 0.15);
+  border-top-color: var(--ekh-orange);
+  animation: loader-spin 0.8s linear infinite;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .detail-modal {
   width: min(1040px, 100%);
   max-height: calc(100vh - 3rem);
