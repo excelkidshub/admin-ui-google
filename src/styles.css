@@ -456,6 +456,135 @@ textarea:focus {
   padding: 0.7rem 0.55rem;
 }
 
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--ekh-border);
+}
+
+.pagination button {
+  border: 1px solid var(--ekh-border);
+  background: #fff;
+  color: var(--ekh-navy);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #f0f4f8;
+  border-color: var(--ekh-green);
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-weight: 600;
+  color: var(--ekh-muted);
+  font-size: 0.9rem;
+}
+
+/* Form Modal Styles */
+.form-modal {
+  width: min(800px, 100%);
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  border: 1px solid var(--ekh-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 251, 247, 0.99) 100%);
+  box-shadow: 0 24px 60px rgba(24, 48, 65, 0.22);
+}
+
+.form-modal .panel__header {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--ekh-border);
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.form-modal .panel__header > div {
+  flex: 1;
+}
+
+.form-modal .panel__header .button {
+  flex-shrink: 0;
+  width: auto;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.modal-content {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-content .form-grid {
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-top: 1px solid var(--ekh-border);
+}
+
+.modal-footer .button {
+  flex: 1;
+}
+
+/* Compact Table Styles */
+.data-table.compact th,
+.data-table.compact td {
+  padding: 0.6rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.data-table.compact {
+  font-size: 0.9rem;
+}
+
+/* Reduce padding for more compact view */
+.panel {
+  border-radius: 18px;
+}
+
+.panel__header {
+  padding: 1rem 1.25rem 0.5rem;
+  gap: 0.75rem;
+}
+
+.table-wrap {
+  padding: 0.5rem 1.25rem 1.25rem;
+}
+
+.actions {
+  padding: 0 1.25rem 1.25rem;
+  gap: 0.5rem;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 1.25rem;
+  gap: 0.9rem;
+}
+
 .subtle-copy {
   margin: 0.35rem 0 0;
 }

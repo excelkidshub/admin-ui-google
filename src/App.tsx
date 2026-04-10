@@ -10,6 +10,7 @@ const views: { key: ViewKey; label: string }[] = [
   { key: "expenses", label: "Expenses" }
 ];
 
+const ITEMS_PER_PAGE = 10;
 const learningModes: LearningMode[] = ["Online", "Offline"];
 const paymentModes: PaymentMode[] = ["UPI", "Cash", "Bank Transfer"];
 const expenseCategories = ["Rent", "Salary", "Stationery", "Marketing", "Utilities", "Other"] as const;
@@ -20,6 +21,19 @@ function today() {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
+}
+
+function Pagination({ page, pageCount, onPageChange }: { page: number; pageCount: number; onPageChange: (page: number) => void }) {
+  if (pageCount <= 1) return null;
+  return (
+    <div className="pagination">
+      <button disabled={page === 0} onClick={() => onPageChange(0)}>First</button>
+      <button disabled={page === 0} onClick={() => onPageChange(page - 1)}>Previous</button>
+      <span>Page {page + 1} of {pageCount}</span>
+      <button disabled={page >= pageCount - 1} onClick={() => onPageChange(page + 1)}>Next</button>
+      <button disabled={page >= pageCount - 1} onClick={() => onPageChange(pageCount - 1)}>Last</button>
+    </div>
+  );
 }
 
 function emptyStudentForm(): StudentForm {
@@ -106,9 +120,15 @@ export default function App() {
   const [expenseForm, setExpenseForm] = useState<ExpenseForm>(emptyExpenseForm());
   const [editingStudent, setEditingStudent] = useState(false);
   const [editingBatch, setEditingBatch] = useState(false);
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [showBatchEditModal, setShowBatchEditModal] = useState(false);
   const [assignment, setAssignment] = useState({ admissionId: "", batchCode: "" });
   const [studentSearch, setStudentSearch] = useState("");
   const [batchSearch, setBatchSearch] = useState("");
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [studentPage, setStudentPage] = useState(0);
+  const [batchPage, setBatchPage] = useState(0);
+  const [paymentPage, setPaymentPage] = useState(0);
   const [selectedBatchCode, setSelectedBatchCode] = useState("");
 
   const dashboard = useMemo(() => ({
@@ -124,8 +144,21 @@ export default function App() {
   const visibleStudents = useMemo(() => {
     const query = studentSearch.trim().toLowerCase();
     if (!query) return data.students;
-    return data.students.filter((item) => [item.studentName, item.parentName, item.mobile, item.batchCode].join(" ").toLowerCase().includes(query));
+    return data.students.filter((item) => 
+      [item.admissionId, item.studentName, item.parentName, item.mobile, item.batchCode, item.level]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
   }, [data.students, studentSearch]);
+
+  const paginatedStudents = useMemo(() => {
+    const start = studentPage * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return visibleStudents.slice(start, end);
+  }, [visibleStudents, studentPage]);
+
+  const studentPageCount = Math.ceil(visibleStudents.length / ITEMS_PER_PAGE);
 
   const visibleBatches = useMemo(() => {
     const query = batchSearch.trim().toLowerCase();
@@ -137,6 +170,33 @@ export default function App() {
         .includes(query)
     );
   }, [batchSearch, data.batches]);
+
+  const paginatedBatches = useMemo(() => {
+    const start = batchPage * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return visibleBatches.slice(start, end);
+  }, [visibleBatches, batchPage]);
+
+  const batchPageCount = Math.ceil(visibleBatches.length / ITEMS_PER_PAGE);
+
+  const visiblePayments = useMemo(() => {
+    const query = paymentSearch.trim().toLowerCase();
+    if (!query) return data.payments;
+    return data.payments.filter((item) =>
+      [item.paymentId, item.studentName, item.admissionId, item.paymentMode, item.transactionId]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [data.payments, paymentSearch]);
+
+  const paginatedPayments = useMemo(() => {
+    const start = paymentPage * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return visiblePayments.slice(start, end);
+  }, [visiblePayments, paymentPage]);
+
+  const paymentPageCount = Math.ceil(visiblePayments.length / ITEMS_PER_PAGE);
 
   const selectedBatch = useMemo(
     () => data.batches.find((item) => item.batchCode === selectedBatchCode) ?? null,
@@ -204,6 +264,8 @@ export default function App() {
       }
       setStudentForm(emptyStudentForm());
       setEditingStudent(false);
+      setShowStudentModal(false);
+      setStudentPage(0);
       await refresh();
     }, editingStudent ? "Student updated." : "Student registered.");
   }
@@ -218,6 +280,8 @@ export default function App() {
       }
       setBatchForm(emptyBatchForm());
       setEditingBatch(false);
+      setShowBatchEditModal(false);
+      setBatchPage(0);
       await refresh();
     }, editingBatch ? "Batch updated." : "Batch created.");
   }
@@ -377,66 +441,54 @@ export default function App() {
         ) : null}
 
         {activeView === "students" ? (
-          <section className="page-grid">
+          <section className="stack">
             <section className="panel">
               <div className="panel__header panel__header--stacked">
                 <div><h3>Student admissions</h3><p>Manage registrations and fee status.</p></div>
-                <div className="toolbar"><label><span>Search students</span><input value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search student, parent, mobile, batch" /></label></div>
+                <div className="toolbar">
+                  <label><span>Search students</span><input value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); setStudentPage(0); }} placeholder="ID, name, parent, mobile, batch, level" /></label>
+                  <button className="button button--primary" onClick={() => { setStudentForm(emptyStudentForm()); setEditingStudent(false); setShowStudentModal(true); }} type="button">+ Add Student</button>
+                </div>
               </div>
               <div className="table-wrap">
                 <table className="data-table">
-                  <thead><tr><th>ID</th><th>Student</th><th>Parent</th><th>Batch</th><th>Status</th><th>Pending</th><th>Action</th></tr></thead>
+                  <thead><tr><th>ID</th><th>Student</th><th>Parent</th><th>Batch</th><th>Level</th><th>Status</th><th>Pending</th><th>Action</th></tr></thead>
                   <tbody>
-                    {visibleStudents.map((student) => <tr key={student.admissionId}><td>{student.admissionId}</td><td>{student.studentName}</td><td>{student.parentName}</td><td>{student.batchCode || "-"}</td><td>{student.status}</td><td>{formatCurrency(student.pending)}</td><td><button className="button button--ghost" onClick={() => { setStudentForm({ admissionId: student.admissionId, parentName: student.parentName, mobile: student.mobile, email: student.email, address: student.address, city: student.city, studentName: student.studentName, age: student.age, gender: student.gender, school: student.school, grade: student.grade, level: student.level, batchCode: student.batchCode, mode: student.mode, startDate: student.startDate, endDate: student.endDate, status: student.status, totalFee: student.totalFee, discount: student.discount, manualAdjustment: student.manualAdjustment, totalPaid: student.totalPaid, admissionSource: student.admissionSource, referralType: student.referralType, referrerName: student.referrerName, notes: student.notes }); setEditingStudent(true); }} type="button">Edit</button></td></tr>)}
+                    {paginatedStudents.map((student) => <tr key={student.admissionId}><td>{student.admissionId}</td><td>{student.studentName}</td><td>{student.parentName}</td><td>{student.batchCode || "-"}</td><td>{student.level}</td><td>{student.status}</td><td>{formatCurrency(student.pending)}</td><td><button className="button button--ghost" onClick={() => { setStudentForm({ admissionId: student.admissionId, parentName: student.parentName, mobile: student.mobile, email: student.email, address: student.address, city: student.city, studentName: student.studentName, age: student.age, gender: student.gender, school: student.school, grade: student.grade, level: student.level, batchCode: student.batchCode, mode: student.mode, startDate: student.startDate, endDate: student.endDate, status: student.status, totalFee: student.totalFee, discount: student.discount, manualAdjustment: student.manualAdjustment, totalPaid: student.totalPaid, admissionSource: student.admissionSource, referralType: student.referralType, referrerName: student.referrerName, notes: student.notes }); setEditingStudent(true); setShowStudentModal(true); }} type="button">Edit</button></td></tr>)}
                   </tbody>
                 </table>
               </div>
+              <Pagination page={studentPage} pageCount={studentPageCount} onPageChange={setStudentPage} />
             </section>
-            <form className="panel" onSubmit={saveStudent}>
-              <div className="panel__header"><div><h3>{editingStudent ? "Edit student" : "Register student"}</h3><p>Matches the admissions sheet structure.</p></div></div>
-              <div className="form-grid">
-                <label><span>Student name</span><input value={studentForm.studentName} onChange={(event) => setStudentForm((current) => ({ ...current, studentName: event.target.value }))} required /></label>
-                <label><span>Parent name</span><input value={studentForm.parentName} onChange={(event) => setStudentForm((current) => ({ ...current, parentName: event.target.value }))} required /></label>
-                <label><span>Mobile</span><input value={studentForm.mobile} onChange={(event) => setStudentForm((current) => ({ ...current, mobile: event.target.value }))} required /></label>
-                <label><span>Email</span><input type="email" value={studentForm.email} onChange={(event) => setStudentForm((current) => ({ ...current, email: event.target.value }))} /></label>
-                <label><span>Level</span><input value={studentForm.level} onChange={(event) => setStudentForm((current) => ({ ...current, level: event.target.value }))} required /></label>
-                <label><span>Mode</span><select value={studentForm.mode} onChange={(event) => setStudentForm((current) => ({ ...current, mode: event.target.value as LearningMode }))}>{learningModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select></label>
-                <label><span>Total fee</span><input type="number" min="0" value={studentForm.totalFee} onChange={(event) => setStudentForm((current) => ({ ...current, totalFee: Number(event.target.value) }))} /></label>
-                <label><span>Total paid</span><input type="number" min="0" value={studentForm.totalPaid} onChange={(event) => setStudentForm((current) => ({ ...current, totalPaid: Number(event.target.value) }))} /></label>
-                <label className="field--full"><span>Notes</span><textarea rows={4} value={studentForm.notes} onChange={(event) => setStudentForm((current) => ({ ...current, notes: event.target.value }))} /></label>
-              </div>
-              <div className="actions">
-                <button className="button button--primary" disabled={busy} type="submit">{editingStudent ? "Update student" : "Save student"}</button>
-                <button className="button button--ghost" onClick={() => { setStudentForm(emptyStudentForm()); setEditingStudent(false); }} type="button">Reset</button>
-              </div>
-            </form>
           </section>
         ) : null}
 
         {activeView === "batches" ? (
-          <section className="page-grid">
-            <section className="stack">
-              <section className="panel">
-                <div className="panel__header panel__header--stacked">
-                  <div><h3>Current batches</h3><p>Create and update scheduled batches.</p></div>
-                  <div className="toolbar">
-                    <label>
-                      <span>Search batches</span>
-                      <input value={batchSearch} onChange={(event) => setBatchSearch(event.target.value)} placeholder="Search code, name, level, timing" />
-                    </label>
-                  </div>
+          <section className="stack">
+            <section className="panel">
+              <div className="panel__header panel__header--stacked">
+                <div><h3>Current batches</h3><p>Create and update scheduled batches.</p></div>
+                <div className="toolbar">
+                  <label>
+                    <span>Search batches</span>
+                    <input value={batchSearch} onChange={(event) => { setBatchSearch(event.target.value); setBatchPage(0); }} placeholder="Code, name, level, timing, location" />
+                  </label>
+                  <button className="button button--primary" onClick={() => { setBatchForm(emptyBatchForm()); setEditingBatch(false); setShowBatchEditModal(true); }} type="button">+ Create Batch</button>
                 </div>
-                <div className="table-wrap">
-                  <table className="data-table">
-                    <thead><tr><th>Code</th><th>Name</th><th>Level</th><th>Mode</th><th>Status</th><th>Action</th></tr></thead>
-                    <tbody>
-                      {visibleBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.status}</td><td><div className="actions"><button className="button button--ghost" onClick={() => setSelectedBatchCode(batch.batchCode)} type="button">View</button><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); setSelectedBatchCode(""); }} type="button">Edit</button></div></td></tr>)}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-              <form className="panel" onSubmit={assignBatch}>
-                <div className="panel__header"><div><h3>Assign student to batch</h3><p>Move a student into a running batch.</p></div></div>
+              </div>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead><tr><th>Code</th><th>Name</th><th>Level</th><th>Mode</th><th>Timing</th><th>Status</th><th>Students</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {paginatedBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.timing || "-"}</td><td>{batch.status}</td><td>{data.students.filter((item) => item.batchCode === batch.batchCode).length} / {batch.capacity}</td><td><div className="actions"><button className="button button--ghost" onClick={() => setSelectedBatchCode(batch.batchCode)} type="button">View</button><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); setShowBatchEditModal(true); }} type="button">Edit</button></div></td></tr>)}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination page={batchPage} pageCount={batchPageCount} onPageChange={setBatchPage} />
+            </section>
+            <section className="panel">
+              <div className="panel__header"><div><h3>Assign student to batch</h3><p>Move a student into a running batch.</p></div></div>
+              <form onSubmit={assignBatch}>
                 <div className="form-grid compact-grid">
                   <label><span>Student</span><select value={assignment.admissionId} onChange={(event) => setAssignment((current) => ({ ...current, admissionId: event.target.value }))}><option value="">Select student</option>{data.students.map((student) => <option key={student.admissionId} value={student.admissionId}>{student.studentName} ({student.admissionId})</option>)}</select></label>
                   <label><span>Batch</span><select value={assignment.batchCode} onChange={(event) => setAssignment((current) => ({ ...current, batchCode: event.target.value }))}><option value="">Select batch</option>{data.batches.map((batch) => <option key={batch.batchCode} value={batch.batchCode}>{batch.batchCode} - {batch.batchName}</option>)}</select></label>
@@ -444,74 +496,64 @@ export default function App() {
                 <div className="actions"><button className="button button--primary" disabled={busy} type="submit">Assign batch</button></div>
               </form>
             </section>
-            <form className="panel" onSubmit={saveBatch}>
-              <div className="panel__header"><div><h3>{editingBatch ? "Edit batch" : "Create batch"}</h3><p>Suited to the `batches` sheet.</p></div></div>
-              <div className="form-grid">
-                <label><span>Batch code</span><input value={batchForm.batchCode} onChange={(event) => setBatchForm((current) => ({ ...current, batchCode: event.target.value }))} required disabled={editingBatch} /></label>
-                <label><span>Batch name</span><input value={batchForm.batchName} onChange={(event) => setBatchForm((current) => ({ ...current, batchName: event.target.value }))} required /></label>
-                <label><span>Level</span><input value={batchForm.level} onChange={(event) => setBatchForm((current) => ({ ...current, level: event.target.value }))} required /></label>
-                <label><span>Mode</span><select value={batchForm.mode} onChange={(event) => setBatchForm((current) => ({ ...current, mode: event.target.value as LearningMode }))}>{learningModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select></label>
-                <label><span>Timing</span><input value={batchForm.timing} onChange={(event) => setBatchForm((current) => ({ ...current, timing: event.target.value }))} /></label>
-                <label><span>Capacity</span><input type="number" min="1" value={batchForm.capacity} onChange={(event) => setBatchForm((current) => ({ ...current, capacity: Number(event.target.value) }))} /></label>
-              </div>
-              <div className="actions">
-                <button className="button button--primary" disabled={busy} type="submit">{editingBatch ? "Update batch" : "Save batch"}</button>
-                <button className="button button--ghost" onClick={() => { setBatchForm(emptyBatchForm()); setEditingBatch(false); }} type="button">Reset</button>
-              </div>
-            </form>
           </section>
         ) : null}
 
         {activeView === "payments" ? (
-          <section className="page-grid">
-            <section className="stack">
-              <section className="panel">
-                <div className="panel__header"><div><h3>Payment history</h3><p>Records from the payments sheet.</p></div></div>
-                <div className="table-wrap">
-                  <table className="data-table">
-                    <thead><tr><th>ID</th><th>Student</th><th>Date</th><th>Mode</th><th>Amount</th><th>Transaction</th><th>Action</th></tr></thead>
-                    <tbody>
-                      {data.payments.map((payment) => (
-                        <tr key={payment.paymentId}>
-                          <td>{payment.paymentId}</td>
-                          <td>{payment.studentName}</td>
-                          <td>{payment.paymentDate}</td>
-                          <td>{payment.paymentMode}</td>
-                          <td>{formatCurrency(payment.amount)}</td>
-                          <td>{payment.transactionId || "-"}</td>
-                          <td><div className="table-actions"><button className="button button--ghost" disabled={busy} onClick={() => void sendEmailAction(payment.admissionId, "receipt", payment.paymentId)} type="button">Send receipt</button></div></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          <section className="stack">
+            <section className="panel">
+              <div className="panel__header panel__header--stacked">
+                <div><h3>Payment history</h3><p>Records from the payments sheet.</p></div>
+                <div className="toolbar">
+                  <label><span>Search payments</span><input value={paymentSearch} onChange={(event) => { setPaymentSearch(event.target.value); setPaymentPage(0); }} placeholder="ID, student, admission ID, mode, transaction" /></label>
                 </div>
-              </section>
-
-              <section className="panel">
-                <div className="panel__header"><div><h3>Fee email actions</h3><p>Send reminders and full-payment emails to parents directly from admin.</p></div></div>
-                <div className="table-wrap">
-                  <table className="data-table">
-                    <thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Pending</th><th>Action</th></tr></thead>
-                    <tbody>
-                      {feeFollowUpStudents.map((student) => (
-                        <tr key={student.admissionId}>
-                          <td>{student.studentName}</td>
-                          <td>{student.email || "-"}</td>
-                          <td>{student.paymentStatus}</td>
-                          <td>{formatCurrency(student.pending)}</td>
-                          <td>
-                            <div className="table-actions">
-                              <button className="button button--ghost" disabled={busy || !student.email || student.pending <= 0} onClick={() => void sendEmailAction(student.admissionId, "pending-reminder")} type="button">Pending reminder</button>
-                              <button className="button button--ghost" disabled={busy || !student.email || student.paymentStatus !== "Paid"} onClick={() => void sendEmailAction(student.admissionId, "full-payment")} type="button">Full payment</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+              </div>
+              <div className="table-wrap">
+                <table className="data-table compact">
+                  <thead><tr><th>ID</th><th>Student</th><th>Date</th><th>Mode</th><th>Amount</th><th>Trans ID</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {paginatedPayments.map((payment) => (
+                      <tr key={payment.paymentId}>
+                        <td>{payment.paymentId}</td>
+                        <td>{payment.studentName}</td>
+                        <td>{payment.paymentDate}</td>
+                        <td>{payment.paymentMode}</td>
+                        <td>{formatCurrency(payment.amount)}</td>
+                        <td>{payment.transactionId || "-"}</td>
+                        <td><button className="button button--ghost" disabled={busy} onClick={() => void sendEmailAction(payment.admissionId, "receipt", payment.paymentId)} type="button">Send Receipt</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination page={paymentPage} pageCount={paymentPageCount} onPageChange={setPaymentPage} />
             </section>
+
+            <section className="panel">
+              <div className="panel__header"><div><h3>Fee email actions</h3><p>Send reminders and full-payment emails to parents directly from admin.</p></div></div>
+              <div className="table-wrap">
+                <table className="data-table compact">
+                  <thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Pending</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {feeFollowUpStudents.map((student) => (
+                      <tr key={student.admissionId}>
+                        <td>{student.studentName}</td>
+                        <td>{student.email || "-"}</td>
+                        <td>{student.paymentStatus}</td>
+                        <td>{formatCurrency(student.pending)}</td>
+                        <td>
+                          <div className="table-actions">
+                            <button className="button button--ghost" disabled={busy || !student.email || student.pending <= 0} onClick={() => void sendEmailAction(student.admissionId, "pending-reminder")} type="button">Pending</button>
+                            <button className="button button--ghost" disabled={busy || !student.email || student.paymentStatus !== "Paid"} onClick={() => void sendEmailAction(student.admissionId, "full-payment")} type="button">Full Payment</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
             <form className="panel" onSubmit={savePayment}>
               <div className="panel__header"><div><h3>Create payment record</h3><p>Add a new fee collection entry and optionally email the parent.</p></div></div>
               <div className="form-grid">
@@ -554,6 +596,85 @@ export default function App() {
           </section>
         ) : null}
       </main>
+      
+      {/* Student Edit Modal */}
+      {showStudentModal ? (
+        <div className="modal-backdrop" onClick={() => { setShowStudentModal(false); setStudentForm(emptyStudentForm()); setEditingStudent(false); }} role="presentation">
+          <section className="form-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="panel__header">
+              <div><h3>{editingStudent ? "Edit student" : "Register student"}</h3><p>Manage student information and fees.</p></div>
+              <button className="button button--ghost" onClick={() => { setShowStudentModal(false); setStudentForm(emptyStudentForm()); setEditingStudent(false); }} type="button">✕</button>
+            </div>
+            <form onSubmit={saveStudent}>
+              <div className="modal-content">
+                <div className="form-grid">
+                  <label><span>Student name *</span><input value={studentForm.studentName} onChange={(event) => setStudentForm((current) => ({ ...current, studentName: event.target.value }))} required /></label>
+                  <label><span>Parent name *</span><input value={studentForm.parentName} onChange={(event) => setStudentForm((current) => ({ ...current, parentName: event.target.value }))} required /></label>
+                  <label><span>Mobile *</span><input value={studentForm.mobile} onChange={(event) => setStudentForm((current) => ({ ...current, mobile: event.target.value }))} required /></label>
+                  <label><span>Email</span><input type="email" value={studentForm.email} onChange={(event) => setStudentForm((current) => ({ ...current, email: event.target.value }))} /></label>
+                  <label><span>Age</span><input value={studentForm.age} onChange={(event) => setStudentForm((current) => ({ ...current, age: event.target.value }))} /></label>
+                  <label><span>Gender</span><select value={studentForm.gender} onChange={(event) => setStudentForm((current) => ({ ...current, gender: event.target.value }))}><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+                  <label><span>School</span><input value={studentForm.school} onChange={(event) => setStudentForm((current) => ({ ...current, school: event.target.value }))} /></label>
+                  <label><span>Grade</span><input value={studentForm.grade} onChange={(event) => setStudentForm((current) => ({ ...current, grade: event.target.value }))} /></label>
+                  <label><span>Level *</span><input value={studentForm.level} onChange={(event) => setStudentForm((current) => ({ ...current, level: event.target.value }))} required /></label>
+                  <label><span>Learning Mode *</span><select value={studentForm.mode} onChange={(event) => setStudentForm((current) => ({ ...current, mode: event.target.value as LearningMode }))}>{learningModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select></label>
+                  <label><span>Status</span><select value={studentForm.status} onChange={(event) => setStudentForm((current) => ({ ...current, status: event.target.value as any }))}><option value="Pending Start">Pending Start</option><option value="Active">Active</option><option value="Completed">Completed</option><option value="On Hold">On Hold</option></select></label>
+                  <label><span>Assign Batch</span><select value={studentForm.batchCode} onChange={(event) => setStudentForm((current) => ({ ...current, batchCode: event.target.value }))}><option value="">Select batch</option>{data.batches.map((batch) => <option key={batch.batchCode} value={batch.batchCode}>{batch.batchCode} - {batch.batchName}</option>)}</select></label>
+                  <label><span>Start Date</span><input type="date" value={studentForm.startDate} onChange={(event) => setStudentForm((current) => ({ ...current, startDate: event.target.value }))} /></label>
+                  <label><span>End Date</span><input type="date" value={studentForm.endDate} onChange={(event) => setStudentForm((current) => ({ ...current, endDate: event.target.value }))} /></label>
+                  <label><span>Total Fee</span><input type="number" min="0" value={studentForm.totalFee} onChange={(event) => setStudentForm((current) => ({ ...current, totalFee: Number(event.target.value) }))} /></label>
+                  <label><span>Total Paid</span><input type="number" min="0" value={studentForm.totalPaid} onChange={(event) => setStudentForm((current) => ({ ...current, totalPaid: Number(event.target.value) }))} /></label>
+                  <label><span>Discount</span><input type="number" min="0" value={studentForm.discount} onChange={(event) => setStudentForm((current) => ({ ...current, discount: Number(event.target.value) }))} /></label>
+                  <label><span>Manual Adjustment</span><input type="number" value={studentForm.manualAdjustment} onChange={(event) => setStudentForm((current) => ({ ...current, manualAdjustment: Number(event.target.value) }))} /></label>
+                  <label><span>City</span><input value={studentForm.city} onChange={(event) => setStudentForm((current) => ({ ...current, city: event.target.value }))} /></label>
+                  <label className="field--full"><span>Address</span><textarea rows={2} value={studentForm.address} onChange={(event) => setStudentForm((current) => ({ ...current, address: event.target.value }))} /></label>
+                  <label className="field--full"><span>Notes</span><textarea rows={3} value={studentForm.notes} onChange={(event) => setStudentForm((current) => ({ ...current, notes: event.target.value }))} /></label>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="button button--primary" disabled={busy} type="submit">{editingStudent ? "Update student" : "Save student"}</button>
+                <button className="button button--ghost" onClick={() => { setShowStudentModal(false); setStudentForm(emptyStudentForm()); setEditingStudent(false); }} type="button">Cancel</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
+      {/* Batch Edit Modal */}
+      {showBatchEditModal ? (
+        <div className="modal-backdrop" onClick={() => { setShowBatchEditModal(false); setBatchForm(emptyBatchForm()); setEditingBatch(false); }} role="presentation">
+          <section className="form-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="panel__header">
+              <div><h3>{editingBatch ? "Edit batch" : "Create batch"}</h3><p>Manage batch schedule and details.</p></div>
+              <button className="button button--ghost" onClick={() => { setShowBatchEditModal(false); setBatchForm(emptyBatchForm()); setEditingBatch(false); }} type="button">✕</button>
+            </div>
+            <form onSubmit={saveBatch}>
+              <div className="modal-content">
+                <div className="form-grid">
+                  <label><span>Batch code *</span><input value={batchForm.batchCode} onChange={(event) => setBatchForm((current) => ({ ...current, batchCode: event.target.value }))} required disabled={editingBatch} /></label>
+                  <label><span>Batch name *</span><input value={batchForm.batchName} onChange={(event) => setBatchForm((current) => ({ ...current, batchName: event.target.value }))} required /></label>
+                  <label><span>Level *</span><input value={batchForm.level} onChange={(event) => setBatchForm((current) => ({ ...current, level: event.target.value }))} required /></label>
+                  <label><span>Mode *</span><select value={batchForm.mode} onChange={(event) => setBatchForm((current) => ({ ...current, mode: event.target.value as LearningMode }))}>{learningModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select></label>
+                  <label><span>Status</span><select value={batchForm.status} onChange={(event) => setBatchForm((current) => ({ ...current, status: event.target.value as any }))}><option value="Upcoming">Upcoming</option><option value="Active">Active</option><option value="Completed">Completed</option></select></label>
+                  <label><span>Capacity</span><input type="number" min="1" value={batchForm.capacity} onChange={(event) => setBatchForm((current) => ({ ...current, capacity: Number(event.target.value) }))} /></label>
+                  <label><span>Start Date</span><input type="date" value={batchForm.startDate} onChange={(event) => setBatchForm((current) => ({ ...current, startDate: event.target.value }))} /></label>
+                  <label><span>End Date</span><input type="date" value={batchForm.endDate} onChange={(event) => setBatchForm((current) => ({ ...current, endDate: event.target.value }))} /></label>
+                  <label><span>Timing</span><input value={batchForm.timing} onChange={(event) => setBatchForm((current) => ({ ...current, timing: event.target.value }))} placeholder="e.g., 4:00 PM - 5:00 PM" /></label>
+                  <label><span>Days</span><input value={batchForm.days} onChange={(event) => setBatchForm((current) => ({ ...current, days: event.target.value }))} placeholder="e.g., Mon, Wed, Fri" /></label>
+                  <label><span>Location</span><input value={batchForm.location} onChange={(event) => setBatchForm((current) => ({ ...current, location: event.target.value }))} /></label>
+                  <label className="field--full"><span>Notes</span><textarea rows={3} value={batchForm.notes} onChange={(event) => setBatchForm((current) => ({ ...current, notes: event.target.value }))} /></label>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="button button--primary" disabled={busy} type="submit">{editingBatch ? "Update batch" : "Save batch"}</button>
+                <button className="button button--ghost" onClick={() => { setShowBatchEditModal(false); setBatchForm(emptyBatchForm()); setEditingBatch(false); }} type="button">Cancel</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
+      {/* Batch Detail Modal */}
       {selectedBatch ? (
         <div className="modal-backdrop" onClick={() => setSelectedBatchCode("")} role="presentation">
           <section className="detail-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="batch-detail-title">

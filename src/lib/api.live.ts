@@ -182,8 +182,22 @@ export const adminApi = {
     });
   },
 
-  async updateStudent(_form: StudentForm) {
-    throw new Error("Student update is not connected to Google Sheet yet");
+  async function updateStudent(form: StudentForm) {
+    const payload = toAdmissionsPayload(form);
+    await postAppsScript<never>({
+      action: "updateStudent",
+      adminToken: adminSession.getToken(),
+      admissionId: form.admissionId,
+      ...payload,
+      batchCode: form.batchCode,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      status: form.status,
+      totalFee: form.totalFee,
+      discount: form.discount,
+      manualAdjustment: form.manualAdjustment,
+      totalPaid: form.totalPaid
+    });
   },
 
   async createBatch(form: BatchForm) {
