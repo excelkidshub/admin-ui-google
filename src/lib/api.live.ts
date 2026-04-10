@@ -182,7 +182,7 @@ export const adminApi = {
     });
   },
 
-  async function updateStudent(form: StudentForm) {
+  async updateStudent(form: StudentForm) {
     const payload = toAdmissionsPayload(form);
     await postAppsScript<never>({
       action: "updateStudent",

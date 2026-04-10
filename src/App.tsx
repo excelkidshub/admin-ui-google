@@ -23,6 +23,15 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 }
 
+function formatDateCompact(value: string) {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(parsed);
+}
+
 function Pagination({ page, pageCount, onPageChange }: { page: number; pageCount: number; onPageChange: (page: number) => void }) {
   if (pageCount <= 1) return null;
   return (
@@ -447,14 +456,52 @@ export default function App() {
                 <div><h3>Student admissions</h3><p>Manage registrations and fee status.</p></div>
                 <div className="toolbar">
                   <label><span>Search students</span><input value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); setStudentPage(0); }} placeholder="ID, name, parent, mobile, batch, level" /></label>
+                  <span className="result-count">{visibleStudents.length} students</span>
                   <button className="button button--primary" onClick={() => { setStudentForm(emptyStudentForm()); setEditingStudent(false); setShowStudentModal(true); }} type="button">+ Add Student</button>
                 </div>
               </div>
               <div className="table-wrap">
-                <table className="data-table">
-                  <thead><tr><th>ID</th><th>Student</th><th>Parent</th><th>Batch</th><th>Level</th><th>Status</th><th>Pending</th><th>Action</th></tr></thead>
+                <table className="data-table compact-grid-table">
+                  <thead><tr><th>Student</th><th>Parent</th><th>Program</th><th>Fees</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
-                    {paginatedStudents.map((student) => <tr key={student.admissionId}><td>{student.admissionId}</td><td>{student.studentName}</td><td>{student.parentName}</td><td>{student.batchCode || "-"}</td><td>{student.level}</td><td>{student.status}</td><td>{formatCurrency(student.pending)}</td><td><button className="button button--ghost" onClick={() => { setStudentForm({ admissionId: student.admissionId, parentName: student.parentName, mobile: student.mobile, email: student.email, address: student.address, city: student.city, studentName: student.studentName, age: student.age, gender: student.gender, school: student.school, grade: student.grade, level: student.level, batchCode: student.batchCode, mode: student.mode, startDate: student.startDate, endDate: student.endDate, status: student.status, totalFee: student.totalFee, discount: student.discount, manualAdjustment: student.manualAdjustment, totalPaid: student.totalPaid, admissionSource: student.admissionSource, referralType: student.referralType, referrerName: student.referrerName, notes: student.notes }); setEditingStudent(true); setShowStudentModal(true); }} type="button">Edit</button></td></tr>)}
+                    {paginatedStudents.map((student) => <tr key={student.admissionId}>
+                      <td>
+                        <div className="cell-stack">
+                          <strong>{student.studentName}</strong>
+                          <span>{student.admissionId} | {student.grade || "No grade"} | {student.age || "Age -"}</span>
+                          <small>{student.school || "School not added"}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-stack">
+                          <strong>{student.parentName}</strong>
+                          <span>{student.mobile || "-"}</span>
+                          <small>{student.email || student.city || "No contact details"}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-stack">
+                          <strong>{student.batchCode || "Unassigned"}</strong>
+                          <span>{student.level} | {student.mode}</span>
+                          <small>{formatDateCompact(student.startDate)} to {formatDateCompact(student.endDate)}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-stack cell-stack--numeric">
+                          <strong>{formatCurrency(student.pending)}</strong>
+                          <span>Paid {formatCurrency(student.totalPaid)} of {formatCurrency(student.adjustedFee || student.totalFee)}</span>
+                          <small>{student.paymentStatus}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-stack">
+                          <strong>{student.status}</strong>
+                          <span>{student.admissionSource || "Admin UI"}</span>
+                          <small>{student.notes || "No notes"}</small>
+                        </div>
+                      </td>
+                      <td><button className="button button--ghost button--tight" onClick={() => { setStudentForm({ admissionId: student.admissionId, parentName: student.parentName, mobile: student.mobile, email: student.email, address: student.address, city: student.city, studentName: student.studentName, age: student.age, gender: student.gender, school: student.school, grade: student.grade, level: student.level, batchCode: student.batchCode, mode: student.mode, startDate: student.startDate, endDate: student.endDate, status: student.status, totalFee: student.totalFee, discount: student.discount, manualAdjustment: student.manualAdjustment, totalPaid: student.totalPaid, admissionSource: student.admissionSource, referralType: student.referralType, referrerName: student.referrerName, notes: student.notes }); setEditingStudent(true); setShowStudentModal(true); }} type="button">Edit</button></td>
+                    </tr>)}
                   </tbody>
                 </table>
               </div>
@@ -473,14 +520,47 @@ export default function App() {
                     <span>Search batches</span>
                     <input value={batchSearch} onChange={(event) => { setBatchSearch(event.target.value); setBatchPage(0); }} placeholder="Code, name, level, timing, location" />
                   </label>
+                  <span className="result-count">{visibleBatches.length} batches</span>
                   <button className="button button--primary" onClick={() => { setBatchForm(emptyBatchForm()); setEditingBatch(false); setShowBatchEditModal(true); }} type="button">+ Create Batch</button>
                 </div>
               </div>
               <div className="table-wrap">
-                <table className="data-table">
-                  <thead><tr><th>Code</th><th>Name</th><th>Level</th><th>Mode</th><th>Timing</th><th>Status</th><th>Students</th><th>Action</th></tr></thead>
+                <table className="data-table compact-grid-table">
+                  <thead><tr><th>Batch</th><th>Schedule</th><th>Capacity</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
-                    {paginatedBatches.map((batch) => <tr key={batch.batchCode}><td>{batch.batchCode}</td><td>{batch.batchName}</td><td>{batch.level}</td><td>{batch.mode}</td><td>{batch.timing || "-"}</td><td>{batch.status}</td><td>{data.students.filter((item) => item.batchCode === batch.batchCode).length} / {batch.capacity}</td><td><div className="actions"><button className="button button--ghost" onClick={() => setSelectedBatchCode(batch.batchCode)} type="button">View</button><button className="button button--ghost" onClick={() => { setBatchForm(batch); setEditingBatch(true); setShowBatchEditModal(true); }} type="button">Edit</button></div></td></tr>)}
+                    {paginatedBatches.map((batch) => {
+                      const studentCount = data.students.filter((item) => item.batchCode === batch.batchCode).length;
+                      return <tr key={batch.batchCode}>
+                        <td>
+                          <div className="cell-stack">
+                            <strong>{batch.batchCode} | {batch.batchName}</strong>
+                            <span>{batch.level} | {batch.mode}</span>
+                            <small>{batch.location || "Location not added"}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="cell-stack">
+                            <strong>{batch.timing || "-"}</strong>
+                            <span>{batch.days || "Days not set"}</span>
+                            <small>{formatDateCompact(batch.startDate)} to {formatDateCompact(batch.endDate)}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="cell-stack cell-stack--numeric">
+                            <strong>{studentCount} / {batch.capacity}</strong>
+                            <span>{batch.capacity - studentCount} seats left</span>
+                            <small>{studentCount > batch.capacity ? "Over capacity" : "Within capacity"}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="cell-stack">
+                            <strong>{batch.status}</strong>
+                            <span>{batch.notes || "No notes"}</span>
+                          </div>
+                        </td>
+                        <td><div className="table-actions"><button className="button button--ghost button--tight" onClick={() => setSelectedBatchCode(batch.batchCode)} type="button">View</button><button className="button button--ghost button--tight" onClick={() => { setBatchForm(batch); setEditingBatch(true); setShowBatchEditModal(true); }} type="button">Edit</button></div></td>
+                      </tr>;
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -506,21 +586,42 @@ export default function App() {
                 <div><h3>Payment history</h3><p>Records from the payments sheet.</p></div>
                 <div className="toolbar">
                   <label><span>Search payments</span><input value={paymentSearch} onChange={(event) => { setPaymentSearch(event.target.value); setPaymentPage(0); }} placeholder="ID, student, admission ID, mode, transaction" /></label>
+                  <span className="result-count">{visiblePayments.length} payments</span>
                 </div>
               </div>
               <div className="table-wrap">
-                <table className="data-table compact">
-                  <thead><tr><th>ID</th><th>Student</th><th>Date</th><th>Mode</th><th>Amount</th><th>Trans ID</th><th>Action</th></tr></thead>
+                <table className="data-table compact compact-grid-table">
+                  <thead><tr><th>Payment</th><th>Student</th><th>Amount</th><th>Reference</th><th>Action</th></tr></thead>
                   <tbody>
                     {paginatedPayments.map((payment) => (
                       <tr key={payment.paymentId}>
-                        <td>{payment.paymentId}</td>
-                        <td>{payment.studentName}</td>
-                        <td>{payment.paymentDate}</td>
-                        <td>{payment.paymentMode}</td>
-                        <td>{formatCurrency(payment.amount)}</td>
-                        <td>{payment.transactionId || "-"}</td>
-                        <td><button className="button button--ghost" disabled={busy} onClick={() => void sendEmailAction(payment.admissionId, "receipt", payment.paymentId)} type="button">Send Receipt</button></td>
+                        <td>
+                          <div className="cell-stack">
+                            <strong>{payment.paymentId}</strong>
+                            <span>{formatDateCompact(payment.paymentDate)}</span>
+                            <small>{payment.paymentMode}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="cell-stack">
+                            <strong>{payment.studentName}</strong>
+                            <span>{payment.admissionId}</span>
+                            <small>{payment.batchCode || "No batch"}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="cell-stack cell-stack--numeric">
+                            <strong>{formatCurrency(payment.amount)}</strong>
+                            <span>{payment.paymentMode}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="cell-stack">
+                            <strong>{payment.transactionId || "-"}</strong>
+                            <span>{payment.notes || "No notes"}</span>
+                          </div>
+                        </td>
+                        <td><button className="button button--ghost button--tight" disabled={busy} onClick={() => void sendEmailAction(payment.admissionId, "receipt", payment.paymentId)} type="button">Send Receipt</button></td>
                       </tr>
                     ))}
                   </tbody>
