@@ -418,25 +418,26 @@ export default function App() {
             <p className="subtle-copy">ExcelKidsHub style admin workspace for admissions, batches, fees, and expenses.</p>
           </div>
           <div className="topbar__actions">
-            <div className="mobile-nav">
-              <button className="button button--ghost mobile-nav__trigger" onClick={() => setMobileNavOpen((current) => !current)} type="button" aria-expanded={mobileNavOpen}>
-                Menu
-              </button>
-              {mobileNavOpen ? (
-                <div className="mobile-nav__menu">
-                  {views.map((view) => (
-                    <button className={`mobile-nav__item ${activeView === view.key ? "mobile-nav__item--active" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button">
-                      {view.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
             <span className={`chip ${busy ? "chip--busy" : ""}`}>{busy ? "Working..." : "Ready"}</span>
             <button className="button button--ghost" onClick={() => void runTask(refresh)} type="button">Refresh</button>
             <button className="button button--ghost" onClick={() => { adminSession.logout(); setIsLoggedIn(false); }} type="button">Logout</button>
           </div>
         </header>
+
+        <section className="mobile-nav-bar">
+          <button className="button button--ghost mobile-nav__trigger" onClick={() => setMobileNavOpen((current) => !current)} type="button" aria-expanded={mobileNavOpen}>
+            {views.find((view) => view.key === activeView)?.label} Menu
+          </button>
+          {mobileNavOpen ? (
+            <div className="mobile-nav__menu">
+              {views.map((view) => (
+                <button className={`mobile-nav__item ${activeView === view.key ? "mobile-nav__item--active" : ""}`} key={view.key} onClick={() => setActiveView(view.key)} type="button">
+                  {view.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
 
         {message ? <div className={`banner banner--${message.tone}`}>{message.text}</div> : null}
 
