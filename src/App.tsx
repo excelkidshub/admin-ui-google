@@ -208,10 +208,13 @@ export default function App() {
 
   const paymentPageCount = Math.ceil(visiblePayments.length / ITEMS_PER_PAGE);
 
-  const selectedBatch = useMemo(
-    () => data.batches.find((item) => item.batchCode === selectedBatchCode) ?? null,
-    [data.batches, selectedBatchCode]
-  );
+  const selectedBatch = useMemo(() => {
+    if (!selectedBatchCode) {
+      return null;
+    }
+
+    return data.batches.find((item) => item.batchCode === selectedBatchCode) ?? null;
+  }, [data.batches, selectedBatchCode]);
 
   const selectedBatchStudents = useMemo(() => {
     if (!selectedBatchCode) {
